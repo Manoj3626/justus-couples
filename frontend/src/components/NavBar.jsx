@@ -76,7 +76,7 @@ export default function NavBar() {
           to="/"
           className="flex items-center gap-2 text-2xl font-serif font-bold text-[#681F3B] hover:text-[#C44569] transition-colors"
         >
-          JustUs <span className="text-[#C44569]">❤️</span>
+          justus.in <span className="text-[#C44569]">❤️</span>
         </Link>
 
         {/* Desktop Nav Links */}

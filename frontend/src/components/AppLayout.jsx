@@ -43,7 +43,7 @@ export default function AppLayout({ children }) {
         <div>
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-2 text-2xl font-serif font-bold text-[#681F3B]">
-            JustUs <span className="text-[#C44569]">❤️</span>
+            justus.in <span className="text-[#C44569]">❤️</span>
           </Link>
           <p className="text-[11px] text-[#75676E] mt-0.5 font-medium">Two people. One private space.</p>
 
@@ -136,7 +136,7 @@ export default function AppLayout({ children }) {
       {/* Mobile Top Navigation Header */}
       <div className="md:hidden sticky top-0 z-40 bg-white border-b border-[#EADDE2] px-4 py-3 flex items-center justify-between">
         <Link to="/dashboard" className="flex items-center gap-1.5 text-xl font-serif font-bold text-[#681F3B]">
-          JustUs <span className="text-[#C44569]">❤️</span>
+          justus.in <span className="text-[#C44569]">❤️</span>
         </Link>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}

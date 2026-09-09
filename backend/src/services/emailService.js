@@ -10,7 +10,7 @@ async function sendOtpEmail(email, otp) {
   const host = process.env.SMTP_HOST
   const user = process.env.SMTP_USER
   const pass = process.env.SMTP_PASS
-  const from = process.env.SMTP_FROM || '"JustUs ❤️" <noreply@justus.app>'
+  const from = process.env.SMTP_FROM || '"justus.in ❤️" <noreply@justus.in>'
 
   if (host && user && pass) {
     try {
@@ -24,10 +24,10 @@ async function sendOtpEmail(email, otp) {
       await transporter.sendMail({
         from,
         to: email,
-        subject: 'JustUs Verification Code 🔐',
+        subject: 'justus.in Verification Code 🔐',
         html: `
           <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #eadde2; borderRadius: 16px;">
-            <h2 style="color: #681F3B;">JustUs Security Code ❤️</h2>
+            <h2 style="color: #681F3B;">justus.in Security Code ❤️</h2>
             <p style="color: #75676E;">Your 6-digit login verification OTP is below. It expires in 5 minutes:</p>
             <div style="background-color: #fff1f4; border: 1px solid #f7dde4; border-radius: 12px; padding: 16px; text-align: center; margin: 20px 0;">
               <span style="font-family: monospace; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #c44569;">${otp}</span>
@@ -55,7 +55,7 @@ async function sendWelcomeEmail(email, firstName) {
   const host = process.env.SMTP_HOST
   const user = process.env.SMTP_USER
   const pass = process.env.SMTP_PASS
-  const from = process.env.SMTP_FROM || '"JustUs ❤️" <noreply@justus.app>'
+  const from = process.env.SMTP_FROM || '"justus.in ❤️" <noreply@justus.in>'
 
   if (host && user && pass) {
     try {
@@ -69,10 +69,10 @@ async function sendWelcomeEmail(email, firstName) {
       await transporter.sendMail({
         from,
         to: email,
-        subject: 'Welcome to JustUs ❤️',
+        subject: 'Welcome to justus.in ❤️',
         html: `
           <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #eadde2; border-radius: 16px;">
-            <h2 style="color: #681F3B;">Welcome to JustUs, ${firstName}! ❤️</h2>
+            <h2 style="color: #681F3B;">Welcome to justus.in, ${firstName}! ❤️</h2>
             <p style="color: #4A3A42; line-height: 1.6;">Your private space is ready. Connect with your partner using your unique connection code to start sharing real-time chat, music, videos, memories, and dates!</p>
             <div style="background-color: #fff1f4; border: 1px solid #f7dde4; border-radius: 12px; padding: 16px; text-align: center; margin: 20px 0;">
               <span style="font-size: 14px; color: #c44569; font-weight: bold;">Two people. One private space.</span>
