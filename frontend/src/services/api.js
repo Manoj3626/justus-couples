@@ -1,6 +1,17 @@
 import { getToken } from './auth'
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+const getApiBase = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin
+    if (origin.includes('netlify.app') || origin.includes('justus.in')) {
+      return 'https://diary-twin-ministries-cakes.trycloudflare.com/api'
+    }
+  }
+  return '/api'
+}
+
+const API_BASE = getApiBase()
 
 export async function apiFetch(path, opts = {}) {
   const headers = opts.headers ? { ...opts.headers } : {}

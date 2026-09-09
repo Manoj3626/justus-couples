@@ -100,7 +100,7 @@ export default function Login() {
           <div className="relative z-10">
             <Link to="/" className="flex items-center gap-2 text-2xl font-serif font-bold text-[#681F3B]">
               <span className="w-8 h-8 rounded-full bg-[#C44569] text-white flex items-center justify-center text-sm shadow-sm">♥</span>
-              <span>Melody<span className="font-sans font-light italic text-[#C44569]">Space</span></span>
+              <span>Just<span className="font-sans font-light italic text-[#C44569]">Us</span></span>
             </Link>
             <p className="text-[11px] text-[#75676E] tracking-widest font-semibold mt-1 uppercase">
               Your Music • Your Vibes • Your Space
@@ -153,10 +153,10 @@ export default function Login() {
               </span>
               <h1 className="text-3xl sm:text-4xl font-serif font-bold text-[#681F3B] mt-2 leading-tight">
                 Log In to Your <br />
-                <span className="text-[#C44569] italic font-serif font-normal">MelodySpace</span> <span className="text-[#C44569] text-3xl">♡</span>
+                <span className="text-[#C44569] italic font-serif font-normal">JustUs</span> <span className="text-[#C44569] text-3xl">♡</span>
               </h1>
               <p className="mt-2 text-xs sm:text-sm text-[#75676E]">
-                Continue your musical journey. Your space is just a login away!
+                Continue your private space journey. Your space is just a login away!
               </p>
             </div>
 

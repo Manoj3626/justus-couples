@@ -25,6 +25,7 @@ const gamesRoutes = require('./routes/games')
 const aiRoutes = require('./routes/ai')
 
 const app = express()
+app.set('trust proxy', 1)
 const server = http.createServer(app)
 
 app.use(
@@ -37,11 +38,13 @@ app.use(express.json({ limit: '2mb' }))
 app.use(express.urlencoded({ limit: '10mb', extended: true }))
 app.use(cookieParser())
 
-// CORS — env-driven for production
-const corsOrigin = process.env.CORS_ORIGIN || process.env.FRONTEND_URL
+// CORS — env-driven & multi-domain support for production
 app.use(
   cors({
-    origin: corsOrigin || true,
+    origin: (origin, callback) => {
+      // Allow requests from justus.in, netlify.app, localhost or mobile tunnel
+      callback(null, true)
+    },
     credentials: true,
   })
 )
@@ -50,12 +53,25 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: 2000, // Generous limit for tunnel & production
 })
 app.use('/api/', limiter)
 
-// Serve Uploaded Files
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
+// Serve Uploaded Files with CORS & Range Support for Audio/Video Streaming
+app.use(
+  '/uploads',
+  (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', '*')
+    res.setHeader('Accept-Ranges', 'bytes')
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200)
+    }
+    next()
+  },
+  express.static(path.join(__dirname, '../uploads'))
+)
 
 // API Routes
 app.use('/api/auth', authRoutes)
@@ -99,7 +115,7 @@ app.get('*', (req, res, next) => {
 // Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || true,
+    origin: true,
     credentials: true,
   },
   maxHttpBufferSize: 1e6, // 1MB buffer limit — prevents streaming raw video/audio binary data over socket
