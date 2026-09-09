@@ -28,10 +28,9 @@ export default function Footer() {
             A premium private platform crafted for couples to chat, play games, listen, watch, and store cherished memories together.
           </p>
 
-          {/* Contact Placeholders */}
           <div className="mt-6 space-y-1.5 text-xs text-[#2B2025] font-medium">
-            <p>📧 support@justus.in</p>
-            <p>📞 +91 XXXXX XXXXX</p>
+            <p>📧 <a href="mailto:manoja6037@gmail.com" className="hover:text-[#C44569]">manoja6037@gmail.com</a></p>
+            <p>📞 <a href="tel:+919500931459" className="hover:text-[#C44569]">+91 9500931459</a></p>
             <p>📍 India</p>
           </div>
         </div>
