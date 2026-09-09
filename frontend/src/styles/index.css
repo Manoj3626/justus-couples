@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --rose: #C44569;
+  --rose-deep: #9E3155;
+  --burgundy: #681F3B;
+  --soft-rose: #E98BA5;
+  --blush: #F7DDE4;
+  --light-blush: #FFF1F4;
+  --cream: #FFF9F7;
+  --white: #FFFFFF;
+  --dark-text: #2B2025;
+  --secondary-text: #75676E;
+  --border-color: #EADDE2;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--cream);
+  color: var(--dark-text);
+  overflow-x: hidden;
+}
+
+h1, h2, h3, .font-serif {
+  font-family: 'DM Serif Display', Georgia, serif;
+}
+
+/* Custom UI Utilities */
+.btn-primary {
+  background: linear-gradient(135deg, #C44569 0%, #9E3155 100%);
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: 9999px;
+  box-shadow: 0 8px 20px rgba(196, 69, 105, 0.25);
+  transition: all 0.25s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 12px 24px rgba(196, 69, 105, 0.35);
+}
+
+.btn-secondary {
+  background-color: #FFFFFF;
+  color: #681F3B;
+  border: 1.5px solid #EADDE2;
+  font-weight: 600;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  border-color: #C44569;
+  background-color: #FFF1F4;
+  color: #C44569;
+}
+
+.card-hover {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(104, 31, 59, 0.08);
+}
+
+/* Continuous Heartbeat and Floating Animation */
+@keyframes continuousHeartBeat {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+    filter: drop-shadow(0 0 8px rgba(196, 69, 105, 0.6));
+  }
+  50% {
+    transform: scale(1.18) translateY(-4px);
+    filter: drop-shadow(0 0 16px rgba(196, 69, 105, 0.95));
+  }
+}
+
+@keyframes floatWave {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(3deg);
+  }
+}
+
+.animate-continuous-heart {
+  animation: continuousHeartBeat 1.8s ease-in-out infinite;
+}
+
+.animate-float-wave {
+  animation: floatWave 3s ease-in-out infinite;
+}
+
+/* Glassmorphism subtle panel */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(234, 221, 226, 0.8);
+}
+
+/* Divider styling */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #75676E;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #EADDE2;
+}
+
+/* Input Icon positioning */
+.input-icon {
+  position: relative;
+}
+.input-icon .icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #75676E;
+}
+.input-icon input {
+  padding-left: 44px;
+}
+

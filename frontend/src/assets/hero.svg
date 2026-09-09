@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#FFF9F7" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FFF9F7" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="#F7EFED"/>
+  <!-- Abstract warm scene placeholder. Replace with a photographic hero image in production. -->
+  <g transform="translate(200,120)">
+    <rect x="0" y="0" width="1200" height="660" rx="24" fill="#EDE3E6" />
+    <g transform="translate(60,60)">
+      <rect x="0" y="0" width="460" height="540" rx="20" fill="#C8B6C2" opacity="0.9"/>
+      <rect x="500" y="40" width="540" height="420" rx="12" fill="#B39DA6" opacity="0.95"/>
+      <circle cx="360" cy="420" r="80" fill="#FFF" opacity="0.4"/>
+    </g>
+  </g>
+</svg>
