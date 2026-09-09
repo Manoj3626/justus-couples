@@ -19,7 +19,7 @@ export default function Footer() {
             to="/"
             className="flex items-center gap-2 text-2xl font-serif font-bold text-[#681F3B]"
           >
-            justus.in <span className="text-[#C44569]">❤️</span>
+            JustUs <span className="text-[#C44569]">❤️</span>
           </Link>
           <p className="mt-3 text-sm text-[#75676E] max-w-sm">
             "Two people. One private space."
@@ -129,7 +129,7 @@ export default function Footer() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 mt-12 pt-6 border-t border-[#EADDE2] flex flex-col sm:flex-row items-center justify-between text-xs text-[#75676E] gap-4">
-        <p>© 2026 justus.in. All rights reserved.</p>
+        <p>© 2026 JustUs (justus.in). All rights reserved.</p>
         <p className="font-semibold text-[#681F3B] flex items-center gap-1">
           Made with <span className="text-[#C44569]">❤️</span> for two.
         </p>
