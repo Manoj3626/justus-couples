@@ -4,13 +4,43 @@ import CoupleImage from '../components/CoupleImage'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function GamesPage() {
-  const { spaceConnection } = useAuth()
+  const { spaceConnection, socket } = useAuth()
   const partnerName = spaceConnection?.partnerName || 'Your partner'
   const [activeGame, setActiveGame] = useState(null)
   const [questionIdx, setQuestionIdx] = useState(0)
   const [selectedOption, setSelectedOption] = useState(null)
   const [score, setScore] = useState(0)
   const [revealed, setRevealed] = useState(false)
+
+  React.useEffect(() => {
+    if (!activeGame) return
+    const fetchSession = async () => {
+      try {
+        const res = await fetch(`/api/games/${activeGame}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.session) {
+            setQuestionIdx(data.session.currentQuestion || 0)
+          }
+        }
+      } catch (e) {
+        console.warn('Error fetching game session:', e)
+      }
+    }
+    fetchSession()
+
+    if (socket) {
+      const handleGameAction = (data) => {
+        if (data.gameId === activeGame && data.action === 'answer_submitted') {
+          if (data.questionIdx === questionIdx && data.optionIdx !== undefined) {
+            // Live partner interaction update
+          }
+        }
+      }
+      socket.on('game_action', handleGameAction)
+      return () => socket.off('game_action', handleGameAction)
+    }
+  }, [activeGame, socket, questionIdx])
 
   const gamesList = [
     {
@@ -66,11 +96,20 @@ export default function GamesPage() {
 
   const currentGameObj = gamesList.find((g) => g.id === activeGame)
 
-  const handleSelectOption = (idx) => {
+  const handleSelectOption = async (idx) => {
     setSelectedOption(idx)
     setRevealed(true)
     if (currentGameObj && idx === currentGameObj.questions[questionIdx].correct) {
       setScore((s) => s + 1)
+    }
+    try {
+      await fetch(`/api/games/${activeGame}/answer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionIdx, optionIdx: idx }),
+      })
+    } catch (e) {
+      console.warn('Failed saving answer to backend:', e)
     }
   }
 

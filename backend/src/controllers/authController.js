@@ -4,7 +4,7 @@ const Otp = require('../models/Otp')
 const Connection = require('../models/Connection')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { generateOtp, sendOtpEmail } = require('../services/emailService')
+const { generateOtp, sendOtpEmail, sendWelcomeEmail } = require('../services/emailService')
 
 // 1. Signup Account Creation
 exports.signup = async (req, res) => {
@@ -145,9 +145,20 @@ exports.verifyOtp = async (req, res) => {
     user.isVerified = true
     await user.save()
 
-    // Issue JWT Token
-    const secret = process.env.JWT_SECRET || 'dev_jwt_secret_change_me'
-    const token = jwt.sign({ id: user._id }, secret, { expiresIn: '30d' })
+    // Send welcome email exactly once — only mark as sent after successful delivery
+    if (!user.welcomeEmailSent) {
+      try {
+        await sendWelcomeEmail(user.email, user.firstName)
+        user.welcomeEmailSent = true
+        await user.save()
+      } catch (emailErr) {
+        console.warn('Welcome email delivery failed (non-fatal):', emailErr.message)
+        // welcomeEmailSent remains false — will retry on next login
+      }
+    }
+
+    // Issue JWT Token — JWT_SECRET is guaranteed set on startup
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' })
 
     const cookieOptions = {
       httpOnly: true,
@@ -290,18 +301,28 @@ exports.devLogin = async (req, res) => {
     const trimmedEmail = email.trim().toLowerCase()
     let user = await User.findOne({ email: trimmedEmail })
     if (!user) {
+      // Generate a unique connection code for dev test users
+      let uniqueCode
+      let attempt = 0
+      do {
+        uniqueCode = `JUSTUS-${Math.floor(1000 + Math.random() * 9000)}`
+        const existing = await User.findOne({ connectionCode: uniqueCode })
+        if (!existing) break
+        attempt++
+      } while (attempt < 10)
+
       user = new User({
         firstName: trimmedEmail.split('@')[0],
         email: trimmedEmail,
         password: '$2a$10$devPasswordHashPlaceholderForQuickTestingOnly',
-        connectionCode: 'JUSTUS-5977',
+        connectionCode: uniqueCode,
         isVerified: true,
+        welcomeEmailSent: true,
       })
       await user.save()
     }
 
-    const secret = process.env.JWT_SECRET || 'dev_jwt_secret_change_me'
-    const token = jwt.sign({ id: user._id }, secret, { expiresIn: '7d' })
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' })
 
     res.cookie('justus_token', token, {
       httpOnly: true,
@@ -316,4 +337,160 @@ exports.devLogin = async (req, res) => {
     return res.status(500).json({ message: 'Dev login error: ' + err.message })
   }
 }
+
+// 6. Google OAuth Verification & Token Exchange (Cryptographically verified)
+exports.googleAuth = async (req, res) => {
+  const { credential } = req.body
+
+  // Always require a real Google credential JWT
+  if (!credential) {
+    return res.status(400).json({ message: 'Google credential token is required.' })
+  }
+
+  try {
+    const { OAuth2Client } = require('google-auth-library')
+    const clientId = process.env.GOOGLE_CLIENT_ID
+
+    let targetEmail = null
+    let targetName = 'Google User'
+    let targetGoogleId = null
+
+    if (clientId) {
+      // Production: cryptographically verify the credential
+      const client = new OAuth2Client(clientId)
+      let ticket
+      try {
+        ticket = await client.verifyIdToken({
+          idToken: credential,
+          audience: clientId,
+        })
+      } catch (verifyErr) {
+        console.warn('Google credential verification failed:', verifyErr.message)
+        return res.status(401).json({ message: 'Invalid or expired Google credential. Please sign in again.' })
+      }
+
+      const payload = ticket.getPayload()
+      if (!payload || !payload.email) {
+        return res.status(401).json({ message: 'Google credential did not contain a verified email.' })
+      }
+      if (!payload.email_verified) {
+        return res.status(401).json({ message: 'Google email is not verified. Please verify your Google account first.' })
+      }
+
+      targetEmail = payload.email.trim().toLowerCase()
+      targetName = payload.given_name || payload.name || 'Google User'
+      targetGoogleId = payload.sub
+    } else {
+      // Development only: parse without verification (GOOGLE_CLIENT_ID not set)
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(500).json({ message: 'Google authentication is not configured on this server.' })
+      }
+
+      try {
+        const parts = credential.split('.')
+        if (parts.length === 3) {
+          // Pad base64 string correctly for Buffer.from
+          const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(parts[1].length / 4) * 4, '=')
+          const payload = JSON.parse(Buffer.from(padded, 'base64').toString('utf-8'))
+          if (!payload.email) {
+            return res.status(400).json({ message: 'No email found in Google credential payload.' })
+          }
+          targetEmail = payload.email.trim().toLowerCase()
+          targetName = payload.given_name || payload.name || targetName
+          targetGoogleId = payload.sub || null
+          console.warn('[DEV ONLY] Google credential parsed without cryptographic verification — set GOOGLE_CLIENT_ID for production')
+        }
+      } catch (e) {
+        return res.status(400).json({ message: 'Invalid Google credential format.' })
+      }
+    }
+
+    if (!targetEmail) {
+      return res.status(400).json({ message: 'Could not extract a verified email from the Google credential.' })
+    }
+
+    // Find or create user
+    let user = await User.findOne({ email: targetEmail })
+    if (!user) {
+      // Generate a unique connection code
+      let uniqueCode
+      let attempt = 0
+      do {
+        uniqueCode = `JUSTUS-${Math.floor(1000 + Math.random() * 9000)}`
+        const existing = await User.findOne({ connectionCode: uniqueCode })
+        if (!existing) break
+        attempt++
+      } while (attempt < 10)
+
+      const randomPasswordHash = await bcrypt.hash(Math.random().toString(36).substring(2) + Date.now(), 10)
+      user = new User({
+        firstName: targetName,
+        email: targetEmail,
+        password: randomPasswordHash,
+        connectionCode: uniqueCode,
+        isVerified: true,
+        googleId: targetGoogleId,
+        welcomeEmailSent: false,
+      })
+      await user.save()
+    } else {
+      if (!user.isVerified) user.isVerified = true
+      if (targetGoogleId && !user.googleId) user.googleId = targetGoogleId
+      await user.save()
+    }
+
+    // Send welcome email exactly once
+    if (!user.welcomeEmailSent) {
+      try {
+        await sendWelcomeEmail(user.email, user.firstName)
+        user.welcomeEmailSent = true
+        await user.save()
+      } catch (emailErr) {
+        console.warn('Welcome email delivery failed (non-fatal):', emailErr.message)
+        // Do NOT set welcomeEmailSent = true if delivery failed
+      }
+    }
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' })
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    }
+    res.cookie('justus_token', token, cookieOptions)
+
+    let spaceConnection = { connected: false, code: user.connectionCode, partnerName: null }
+    if (user.connectionId) {
+      const conn = await Connection.findById(user.connectionId).populate('user1 user2')
+      if (conn && conn.status === 'CONNECTED') {
+        const partner = conn.user1._id.equals(user._id) ? conn.user2 : conn.user1
+        spaceConnection = {
+          connected: true,
+          code: conn.code,
+          partnerName: partner ? partner.firstName : 'Partner',
+          partnerEmail: partner ? partner.email : null,
+          connectedAt: conn.connectedAt,
+        }
+      }
+    }
+
+    return res.json({
+      token,
+      message: 'Welcome to JustUs ❤️',
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        email: user.email,
+        connectionCode: user.connectionCode,
+      },
+      spaceConnection,
+    })
+  } catch (err) {
+    console.error('Google Auth Error:', err)
+    return res.status(500).json({ message: 'Server error during Google authentication.' })
+  }
+}
+
 

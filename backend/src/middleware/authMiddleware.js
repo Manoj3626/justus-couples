@@ -12,7 +12,11 @@ async function protectRoute(req, res, next) {
       return res.status(401).json({ message: 'Not authorized, token missing' })
     }
 
-    const secret = process.env.JWT_SECRET || 'dev_jwt_secret_change_me'
+    // JWT_SECRET is guaranteed set by index.js startup (dev gets default, production throws if missing)
+    const secret = process.env.JWT_SECRET
+    if (!secret) {
+      return res.status(500).json({ message: 'Server security configuration error' })
+    }
     const decoded = jwt.verify(token, secret)
 
     const user = await User.findById(decoded.id).select('-password')

@@ -8,6 +8,8 @@ const userSchema = new mongoose.Schema({
   partnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   connectionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Connection', default: null },
   isVerified: { type: Boolean, default: false },
+  welcomeEmailSent: { type: Boolean, default: false },
+  googleId: { type: String, sparse: true },
   createdAt: { type: Date, default: Date.now },
 })
 

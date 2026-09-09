@@ -20,8 +20,8 @@ function setupSocketIO(io) {
       }
 
       const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token
-      const secret = process.env.JWT_SECRET || 'dev_jwt_secret_change_me'
-      const decoded = jwt.verify(cleanToken, secret)
+      // JWT_SECRET is guaranteed set by index.js startup (dev gets default, production throws if missing)
+      const decoded = jwt.verify(cleanToken, process.env.JWT_SECRET)
 
       const user = await User.findById(decoded.id).select('-password')
       if (!user) {

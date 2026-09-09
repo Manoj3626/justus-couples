@@ -1,5 +1,6 @@
 const express = require('express')
 const router = express.Router()
+const multer = require('multer')
 const {
   getFolders,
   createFolder,
@@ -12,6 +13,11 @@ const {
 } = require('../controllers/memoriesController')
 const { protectRoute } = require('../middleware/authMiddleware')
 
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+})
+
 // Folders
 router.get('/folders', protectRoute, getFolders)
 router.post('/folders', protectRoute, createFolder)
@@ -20,7 +26,7 @@ router.delete('/folders/:id', protectRoute, deleteFolder)
 
 // Memories Media
 router.get('/', protectRoute, getMemories)
-router.post('/upload', protectRoute, uploadMemory)
+router.post('/upload', protectRoute, upload.single('file'), uploadMemory)
 router.put('/:id/favorite', protectRoute, toggleFavorite)
 router.delete('/:id', protectRoute, deleteMemory)
 

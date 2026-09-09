@@ -70,6 +70,12 @@ exports.renameFolder = async (req, res) => {
       return res.status(404).json({ message: 'Folder not found.' })
     }
 
+    const isOwner = (folder.user && folder.user.equals(req.user._id)) ||
+                    (req.user.connectionId && folder.connectionId && folder.connectionId.equals(req.user.connectionId))
+    if (!isOwner) {
+      return res.status(403).json({ message: 'Unauthorized access to this folder.' })
+    }
+
     folder.name = name.trim()
     await folder.save()
 
@@ -87,6 +93,12 @@ exports.deleteFolder = async (req, res) => {
     const folder = await MemoryFolder.findById(id)
     if (!folder) {
       return res.status(404).json({ message: 'Folder not found.' })
+    }
+
+    const isOwner = (folder.user && folder.user.equals(req.user._id)) ||
+                    (req.user.connectionId && folder.connectionId && folder.connectionId.equals(req.user.connectionId))
+    if (!isOwner) {
+      return res.status(403).json({ message: 'Unauthorized access to this folder.' })
     }
 
     // Delete associated memories in this folder
@@ -121,10 +133,20 @@ exports.getMemories = async (req, res) => {
   }
 }
 
+const { uploadFile } = require('../services/storageService')
+
 exports.uploadMemory = async (req, res) => {
   try {
     const { folderId, title, url, mediaUrl, mediaType, favorite, note } = req.body
-    const mediaPath = (url || mediaUrl || '').trim()
+    let mediaPath = (url || mediaUrl || '').trim()
+
+    if (req.file) {
+      mediaPath = await uploadFile(req.file.buffer, req.file.originalname, req.file.mimetype)
+    } else if (req.body.fileData && req.body.fileName) {
+      const base64Data = req.body.fileData.replace(/^data:[^;]+;base64,/, '')
+      const buffer = Buffer.from(base64Data, 'base64')
+      mediaPath = await uploadFile(buffer, req.body.fileName, 'image/jpeg')
+    }
 
     const newMemory = new Memory({
       user: req.user._id,
@@ -156,6 +178,12 @@ exports.toggleFavorite = async (req, res) => {
       return res.status(404).json({ message: 'Memory not found.' })
     }
 
+    const isOwner = (memory.user && memory.user.equals(req.user._id)) ||
+                    (req.user.connectionId && memory.connectionId && memory.connectionId.equals(req.user.connectionId))
+    if (!isOwner) {
+      return res.status(403).json({ message: 'Unauthorized access to this memory.' })
+    }
+
     memory.favorite = !memory.favorite
     await memory.save()
 
@@ -173,6 +201,12 @@ exports.deleteMemory = async (req, res) => {
 
     if (!memory) {
       return res.status(404).json({ message: 'Memory not found.' })
+    }
+
+    const isOwner = (memory.user && memory.user.equals(req.user._id)) ||
+                    (req.user.connectionId && memory.connectionId && memory.connectionId.equals(req.user.connectionId))
+    if (!isOwner) {
+      return res.status(403).json({ message: 'Unauthorized access to this memory.' })
     }
 
     await Memory.findByIdAndDelete(id)

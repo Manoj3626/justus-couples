@@ -21,6 +21,8 @@ const chatRoutes = require('./routes/chat')
 const notificationsRoutes = require('./routes/notifications')
 const usersRoutes = require('./routes/users')
 const musicRoutes = require('./routes/music')
+const gamesRoutes = require('./routes/games')
+const aiRoutes = require('./routes/ai')
 
 const app = express()
 const server = http.createServer(app)
@@ -31,18 +33,20 @@ app.use(
     crossOriginResourcePolicy: false,
   })
 )
-app.use(express.json({ limit: '200mb' }))
-app.use(express.urlencoded({ limit: '200mb', extended: true }))
+app.use(express.json({ limit: '2mb' }))
+app.use(express.urlencoded({ limit: '10mb', extended: true }))
 app.use(cookieParser())
 
+// CORS — env-driven for production
+const corsOrigin = process.env.CORS_ORIGIN || process.env.FRONTEND_URL
 app.use(
   cors({
-    origin: true,
+    origin: corsOrigin || true,
     credentials: true,
   })
 )
 
-app.use(morgan('dev'))
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -62,6 +66,8 @@ app.use('/api/chat', chatRoutes)
 app.use('/api/notifications', notificationsRoutes)
 app.use('/api/users', usersRoutes)
 app.use('/api/music', musicRoutes)
+app.use('/api/games', gamesRoutes)
+app.use('/api/ai', aiRoutes)
 
 // Serve Static Frontend Dist with strict no-cache headers for index.html
 const frontendDistPath = path.join(__dirname, '../../frontend/dist')
@@ -93,9 +99,10 @@ app.get('*', (req, res, next) => {
 // Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || true,
     credentials: true,
   },
+  maxHttpBufferSize: 1e6, // 1MB buffer limit — prevents streaming raw video/audio binary data over socket
 })
 
 setupSocketIO(io)
@@ -104,8 +111,30 @@ app.set('io', io)
 const PORT = process.env.PORT || 5000
 
 if (!process.env.JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('FATAL SECURITY ERROR: JWT_SECRET environment variable is missing in production!')
+  }
   console.warn('Warning: JWT_SECRET not set — using insecure default for local development')
   process.env.JWT_SECRET = 'dev_jwt_secret_change_me'
+}
+
+if (process.env.NODE_ENV === 'production') {
+  // Require CORS_ORIGIN in production — prevent wildcard origin exposure
+  if (!process.env.CORS_ORIGIN && !process.env.FRONTEND_URL) {
+    throw new Error('FATAL CONFIG ERROR: CORS_ORIGIN or FRONTEND_URL must be set in production!')
+  }
+  // Require MONGO_URI in production — no embedded database allowed
+  if (!process.env.MONGO_URI) {
+    throw new Error('FATAL CONFIG ERROR: MONGO_URI must be set in production!')
+  }
+  // Warn if no persistent cloud storage configured
+  if (!process.env.CLOUDINARY_URL && !process.env.AWS_S3_BUCKET) {
+    throw new Error('FATAL CONFIG ERROR: No persistent cloud storage configured (CLOUDINARY_URL or AWS_S3_BUCKET). Production media would be lost on restart. Configure cloud storage before deploying.')
+  }
+  // Warn if Google Client ID missing
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    console.warn('WARNING: GOOGLE_CLIENT_ID not set — Google OAuth is disabled in production')
+  }
 }
 
 async function start() {
@@ -127,8 +156,11 @@ async function start() {
     await mongoose.connect(mongoUri)
     console.log('✅ Connected to MongoDB successfully.')
 
-    const { seedDefaultUsers } = require('./services/seed')
-    await seedDefaultUsers()
+    // Only seed demo users in development
+    if (process.env.NODE_ENV !== 'production') {
+      const { seedDefaultUsers } = require('./services/seed')
+      await seedDefaultUsers()
+    }
 
     server.listen(PORT, () => {
       console.log(`🚀 JustUs Combined Full-Stack Application running on port ${PORT}`)

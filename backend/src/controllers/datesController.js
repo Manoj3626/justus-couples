@@ -60,6 +60,12 @@ exports.updateDate = async (req, res) => {
       return res.status(404).json({ message: 'Special date not found.' })
     }
 
+    const isOwner = (existingDate.user && existingDate.user.equals(req.user._id)) ||
+                    (req.user.connectionId && existingDate.connectionId && existingDate.connectionId.equals(req.user.connectionId))
+    if (!isOwner) {
+      return res.status(403).json({ message: 'Unauthorized access to this date.' })
+    }
+
     if (title !== undefined) existingDate.title = title.trim()
     if (date !== undefined) existingDate.date = new Date(date)
     if (type !== undefined) existingDate.type = type
@@ -82,6 +88,12 @@ exports.deleteDate = async (req, res) => {
     const existingDate = await SpecialDate.findById(id)
     if (!existingDate) {
       return res.status(404).json({ message: 'Special date not found.' })
+    }
+
+    const isOwner = (existingDate.user && existingDate.user.equals(req.user._id)) ||
+                    (req.user.connectionId && existingDate.connectionId && existingDate.connectionId.equals(req.user.connectionId))
+    if (!isOwner) {
+      return res.status(403).json({ message: 'Unauthorized access to this date.' })
     }
 
     await SpecialDate.findByIdAndDelete(id)

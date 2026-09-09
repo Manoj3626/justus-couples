@@ -23,6 +23,9 @@ exports.markAsRead = async (req, res) => {
     const notif = await Notification.findById(id)
     if (!notif) return res.status(404).json({ message: 'Notification not found.' })
 
+    const isOwner = notif.user?.equals(req.user._id) || (req.user.connectionId && notif.connectionId?.equals(req.user.connectionId))
+    if (!isOwner) return res.status(403).json({ message: 'Unauthorized access to this notification.' })
+
     notif.read = true
     await notif.save()
     return res.json({ notification: notif })

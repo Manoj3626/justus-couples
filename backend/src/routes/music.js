@@ -1,41 +1,49 @@
 const express = require('express')
 const router = express.Router()
-const path = require('path')
-const fs = require('fs')
+const multer = require('multer')
 const authMiddleware = require('../middleware/auth')
+const { uploadFile } = require('../services/storageService')
 
-const uploadsDir = path.join(__dirname, '../../uploads')
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true })
-}
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB Max limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('audio/') || file.mimetype.startsWith('video/') || file.mimetype.startsWith('image/')) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only audio, video, and image files are allowed!'), false)
+    }
+  },
+})
 
-// Upload Audio File for Shared Room Streaming
-router.post('/upload', authMiddleware, async (req, res) => {
+// Upload Media File for Shared Room Streaming (Supports multipart/form-data & JSON base64)
+router.post('/upload', authMiddleware, upload.single('file'), async (req, res) => {
   try {
-    const { fileName, fileData } = req.body
-    if (!fileName || !fileData) {
-      return res.status(400).json({ message: 'Missing fileName or fileData' })
+    let fileBuffer, fileName, mimeType
+
+    if (req.file) {
+      fileBuffer = req.file.buffer
+      fileName = req.file.originalname
+      mimeType = req.file.mimetype
+    } else if (req.body && req.body.fileData && req.body.fileName) {
+      fileName = req.body.fileName
+      mimeType = 'audio/mpeg'
+      const base64Data = req.body.fileData.replace(/^data:[^;]+;base64,/, '')
+      fileBuffer = Buffer.from(base64Data, 'base64')
+    } else {
+      return res.status(400).json({ message: 'No media file or fileData provided' })
     }
 
-    // Extract base64 payload (supports audio, video, etc.)
-    const base64Data = fileData.replace(/^data:[^;]+;base64,/, '')
-    const buffer = Buffer.from(base64Data, 'base64')
+    const fileUrl = await uploadFile(fileBuffer, fileName, mimeType)
 
-    const safeName = fileName.replace(/[^a-zA-Z0-9_.-]/g, '_')
-    const uniqueFileName = `music_${Date.now()}_${safeName}`
-    const filePath = path.join(uploadsDir, uniqueFileName)
-
-    await fs.promises.writeFile(filePath, buffer)
-
-    const fileUrl = `/uploads/${uniqueFileName}`
     res.json({
       success: true,
       url: fileUrl,
-      fileName: safeName,
+      fileName,
     })
   } catch (err) {
-    console.error('Error uploading music file:', err)
-    res.status(500).json({ message: 'Failed to upload music file' })
+    console.error('Error uploading media file:', err)
+    res.status(500).json({ message: 'Failed to upload media file: ' + err.message })
   }
 })
 
