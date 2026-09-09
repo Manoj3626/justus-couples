@@ -1,8 +1,18 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+function htmlCacheBuster() {
+  return {
+    name: 'html-cache-buster',
+    transformIndexHtml(html) {
+      const version = Date.now()
+      return html.replace(/(href|src)="(\/assets\/[^"]+)"/g, `$1="$2?v=${version}"`)
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), htmlCacheBuster()],
   server: {
     host: true, // Listens on all network interfaces for mobile testing
     port: 3000,
@@ -32,3 +42,4 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
   },
 })
+
