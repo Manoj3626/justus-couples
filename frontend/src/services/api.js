@@ -5,7 +5,7 @@ const getApiBase = () => {
   if (typeof window !== 'undefined') {
     const origin = window.location.origin
     if (origin.includes('netlify.app') || origin.includes('justus.in')) {
-      return 'https://diary-twin-ministries-cakes.trycloudflare.com/api'
+      return 'https://dream-liberal-fires-adrian.trycloudflare.com/api'
     }
   }
   return '/api'
